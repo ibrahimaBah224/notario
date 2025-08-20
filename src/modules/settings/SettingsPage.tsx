@@ -69,7 +69,7 @@ export default function SettingsPage() {
     setSettings(prev => ({
       ...prev,
       [section]: {
-        ...prev[section],
+        ...(prev[section] as Record<string, any>),
         [field]: value
       }
     }))

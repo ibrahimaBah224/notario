@@ -119,7 +119,7 @@ const mockAuditLogs: AuditLog[] = [
 ]
 
 export default function AuditPage() {
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(mockAuditLogs)
+  const [auditLogs] = useState<AuditLog[]>(mockAuditLogs)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterCategorie, setFilterCategorie] = useState<string>('')
   const [filterStatut, setFilterStatut] = useState<string>('')

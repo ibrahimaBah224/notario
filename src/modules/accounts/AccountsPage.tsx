@@ -116,7 +116,7 @@ const mockMouvements: Mouvement[] = [
 
 export default function AccountsPage() {
   const [comptes, setComptes] = useState<CompteBancaire[]>(mockComptes)
-  const [mouvements, setMouvements] = useState<Mouvement[]>(mockMouvements)
+  const [mouvements] = useState<Mouvement[]>(mockMouvements)
   const [selectedCompte, setSelectedCompte] = useState<string>('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [showModal, setShowModal] = useState(false)

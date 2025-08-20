@@ -399,8 +399,8 @@ export default function TemplatesPage() {
               
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-2">Contenu du modèle</label>
-                <div className="text-xs text-[var(--muted)] mb-2">
-                  Utilisez {{variable}} pour les champs dynamiques
+                <div className="hint">
+                  Utilisez {'{variable}'} pour les champs dynamiques
                 </div>
                 <textarea
                   value={newModele.contenu}

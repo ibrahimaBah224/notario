@@ -20,10 +20,10 @@ interface SecurityPolicy {
 }
 
 interface MFASettings {
+  methodes: ("email" | "sms" | "app")[]
   actif: boolean
-  methodes: ('sms' | 'email' | 'app')[]
   rolesObligatoires: string[]
-  gracePeriod: number // en jours
+  gracePeriod: number
 }
 
 const mockRoles: Role[] = [
@@ -128,14 +128,14 @@ const mockPolicies: SecurityPolicy[] = [
 ]
 
 export default function SecurityPage() {
-  const [roles, setRoles] = useState<Role[]>(mockRoles)
+  const [roles] = useState<Role[]>(mockRoles)
   const [policies, setPolicies] = useState<SecurityPolicy[]>(mockPolicies)
   const [showNewRoleModal, setShowNewRoleModal] = useState(false)
   const [showPolicyModal, setShowPolicyModal] = useState(false)
   const [selectedPolicy, setSelectedPolicy] = useState<SecurityPolicy | null>(null)
   const [mfaSettings, setMfaSettings] = useState<MFASettings>({
-    actif: true,
     methodes: ['sms', 'email', 'app'],
+    actif: true,
     rolesObligatoires: ['Admin Global', 'Gérant', 'Notaire'],
     gracePeriod: 7
   })
@@ -176,8 +176,13 @@ export default function SecurityPage() {
     ))
   }
 
-  const toggleMFA = () => {
-    setMfaSettings(prev => ({ ...prev, actif: !prev.actif }))
+  const handleToggleMFA = (methode: "email" | "sms" | "app") => {
+    setMfaSettings(prev => ({
+      ...prev,
+      methodes: prev.methodes.includes(methode) 
+        ? prev.methodes.filter(m => m !== methode)
+        : [...prev.methodes, methode]
+    }))
   }
 
   const stats = {
@@ -356,7 +361,7 @@ export default function SecurityPage() {
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="font-medium text-[var(--text)]">Authentification à deux facteurs</h4>
                   <button
-                    onClick={toggleMFA}
+                    onClick={() => setMfaSettings(prev => ({ ...prev, actif: !prev.actif }))}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                       mfaSettings.actif 
                         ? 'bg-green-100 text-green-800 hover:bg-green-200' 
@@ -376,20 +381,8 @@ export default function SecurityPage() {
                           <label key={methode} className="flex items-center gap-2">
                             <input
                               type="checkbox"
-                              checked={mfaSettings.methodes.includes(methode)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setMfaSettings(prev => ({
-                                    ...prev,
-                                    methodes: [...prev.methodes, methode]
-                                  }))
-                                } else {
-                                  setMfaSettings(prev => ({
-                                    ...prev,
-                                    methodes: prev.methodes.filter(m => m !== methode)
-                                  }))
-                                }
-                              }}
+                              checked={mfaSettings.methodes.includes(methode as "email" | "sms" | "app")}
+                              onChange={() => handleToggleMFA(methode as "email" | "sms" | "app")}
                               className="w-4 h-4 text-blue-600 bg-[var(--elev)] border-[var(--border)] rounded"
                             />
                             <span className="text-sm text-[var(--text)]">
