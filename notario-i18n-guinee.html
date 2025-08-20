@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notario – Maquette interactive (Cahier de charges)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root{
+      --bg:#0b0d10;          /* Dark base */
+      --surface:#12161c;     /* Cards */
+      --elev:#1a1f27;        /* Elevated */
+      --text:#e7edf3;        /* Primary text */
+      --muted:#98a2b3;       /* Secondary text */
+      --ok:#22c55e;          
+      --warn:#f59e0b;
+      --danger:#ef4444;
+      --border:#263041;
+      --flag-red:#CE1126;    /* Drapeau de la Guinée */
+      --flag-yellow:#FCD116;
+      --flag-green:#009460;
+      --accent: linear-gradient(135deg,var(--flag-red),var(--flag-yellow),var(--flag-green));
+      --radius:16px;
+      --shadow:0 10px 30px rgba(0,0,0,.25);
+    }
+    .light{
+      --bg:#f6f8fb;
+      --surface:#ffffff;
+      --elev:#f1f5f9;
+      --text:#0b1220;
+      --muted:#5b667a;
+      --border:#e6eaf0;
+      --shadow:0 8px 24px rgba(2,6,23,.08);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background:var(--bg); color:var(--text); font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial; 
+      display:grid; grid-template-columns: 280px 1fr; grid-template-rows: 64px 1fr; grid-template-areas:
+      "sidebar header"
+      "sidebar main";
+      transition:background .3s ease,color .3s ease;
+    }
+    /* Header */
+    header{grid-area:header; display:flex; align-items:center; gap:16px; padding:0 18px; background:var(--surface); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:50}
+    .brand{display:flex; align-items:center; gap:12px; font-weight:800}
+    .flag-dot{width:18px; height:18px; border-radius:50%; background:var(--accent); box-shadow:inset 0 0 0 2px rgba(255,255,255,.3)}
+    .header-actions{margin-left:auto; display:flex; gap:8px; align-items:center}
+    .chip{padding:6px 10px; border:1px solid var(--border); border-radius:999px; background:var(--elev); color:var(--muted); font-size:12px}
+    .iconbtn{height:40px; width:40px; display:grid; place-items:center; border-radius:12px; background:var(--elev); border:1px solid var(--border); cursor:pointer}
+    .search{position:relative; min-width:280px}
+    .search input{width:100%; background:var(--elev); border:1px solid var(--border); color:var(--text); border-radius:12px; padding:10px 14px 10px 36px; outline:none}
+    .search svg{position:absolute; top:50%; left:10px; transform:translateY(-50%); opacity:.7}
+    button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--flag-yellow); outline-offset: 2px; border-color: var(--flag-yellow); }
+    /* Sidebar */
+    aside{grid-area:sidebar; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; gap:12px; padding:16px; transition:width .3s ease; width:280px; overflow:auto}
+    .collapse aside{width:86px}
+    .collapse .hide-when-collapsed{display:none}
+    .collapse .menu a{justify-content:center}
+    body.collapse{grid-template-columns:86px 1fr} /* ✅ le main prend tout l'espace quand le menu est réduit */
+    .profile{display:flex; gap:12px; align-items:center; padding:10px; border:1px solid var(--border); background:var(--elev); border-radius:14px}
+    .profile .avatar{width:36px;height:36px;border-radius:10px;background:var(--accent)}
+    .profile strong{display:block}
+    .profile small{color:var(--muted)}
+    .menu{display:flex; flex-direction:column; gap:6px}
+    .menu h4{margin:18px 10px 6px;color:var(--muted); font-weight:600; font-size:12px; letter-spacing:.08em}
+    .menu a{display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:12px; color:inherit; text-decoration:none; border:1px solid transparent}
+    .menu a:hover{background:var(--elev); border-color:var(--border)}
+    .menu a.active{background:linear-gradient(135deg, rgba(206,17,38,.12), rgba(252,209,22,.12), rgba(0,148,96,.12)); border-color:var(--border)}
+    .menu svg{opacity:.9}
+    .badge{margin-left:auto; background:var(--flag-yellow); color:#222; font-weight:700; border-radius:999px; padding:2px 8px; font-size:11px}
+    /* Main */
+    main{grid-area:main; padding:20px; overflow:auto}
+    .page{display:none; animation:fade .25s ease}
+    .page.active{display:block}
+    @keyframes fade{from{opacity:.5;transform:translateY(4px)} to{opacity:1;transform:none}}
+    .page-header{display:flex; align-items:end; justify-content:space-between; gap:16px; margin-bottom:16px}
+    .titlewrap h1{margin:0; font-size:24px}
+    .subtitle{color:var(--muted)}
+    .grid{display:grid; gap:16px}
+    .grid.cols-4{grid-template-columns: repeat(4, minmax(0,1fr))}
+    .grid.cols-3{grid-template-columns: repeat(3, minmax(0,1fr))}
+    .grid.cols-2{grid-template-columns: repeat(2, minmax(0,1fr))}
+    @media(min-width:1600px){ .grid.cols-4{grid-template-columns: repeat(4, minmax(0,1fr))} }
+    @media(max-width:1200px){.grid.cols-4{grid-template-columns: repeat(2,1fr)}}
+    @media(max-width:800px){body{grid-template-columns: 86px 1fr}.grid.cols-3,.grid.cols-4{grid-template-columns:1fr}}
+    .card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow)}
+    .card h3{margin:0 0 8px 0}
+    .card .content{padding:16px}
+    .kpis{display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:16px}
+    .kpi{background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:16px; display:flex; gap:12px; align-items:center}
+    .kpi .k{height:40px; width:40px; border-radius:12px; background:var(--accent); display:grid; place-items:center}
+    .kpi .v{font-size:22px; font-weight:800}
+    .kpi .l{color:var(--muted); font-size:12px}
+    table{width:100%; border-collapse:separate; border-spacing:0}
+    thead th{position:sticky; top:0; background:var(--elev); color:var(--muted); text-align:left; font-weight:600; font-size:12px; letter-spacing:.06em}
+    th,td{padding:12px 10px; border-bottom:1px solid var(--border)}
+    tr:hover td{background:rgba(255,255,255,.02)}
+    .tag{font-size:12px; padding:4px 8px; border-radius:999px; border:1px solid var(--border); background:var(--elev)}
+    .row-actions{display:flex; gap:8px}
+    .btn{padding:10px 12px; border-radius:12px; border:1px solid var(--border); background:var(--elev); color:var(--text); cursor:pointer}
+    .btn.primary{background:var(--accent); border:none; color:#0b0d10; font-weight:800}
+    .btn.ghost{background:transparent}
+    .progress{height:10px; background:var(--elev); border:1px solid var(--border); border-radius:999px; overflow:hidden}
+    .progress>span{display:block; height:100%; background:var(--accent)}
+    .kanban{display:grid; grid-template-columns:repeat(3,1fr); gap:16px}
+    .column{background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:12px}
+    .ticket{border:1px solid var(--border); border-radius:12px; padding:10px; background:var(--elev); margin-bottom:10px}
+    /* Modal */
+    .modal{position:fixed; inset:0; background:rgba(5,8,13,.6); display:none; align-items:center; justify-content:center; z-index:100}
+    .modal .box{width:min(720px,92vw); background:var(--surface); border:1px solid var(--border); border-radius:20px; overflow:hidden}
+    .modal header{background:var(--elev); border-bottom:1px solid var(--border)}
+    .modal .box .content{padding:16px}
+    .form{display:grid; grid-template-columns:repeat(2,1fr); gap:12px}
+    .form label{font-size:12px; color:var(--muted)}
+    .form input,.form select,.form textarea{width:100%; padding:10px 12px; border-radius:12px; background:var(--elev); border:1px solid var(--border); color:var(--text)}
+    .form textarea{min-height:90px; grid-column:1/-1}
+    .footer-actions{display:flex; justify-content:flex-end; gap:8px; padding:12px 16px; border-top:1px solid var(--border); background:var(--elev)}
+    /* Utilities */
+    .pill{padding:6px 10px; border-radius:999px; font-size:12px; border:1px solid var(--border); background:var(--elev)}
+    .ok{color:var(--ok)}
+    .warn{color:var(--warn)}
+    .danger{color:var(--danger)}
+    .sep{height:1px; background:var(--border); margin:16px 0}
+    .hint{color:var(--muted); font-size:12px}
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside>
+    <div class="profile">
+      <div class="avatar" aria-hidden="true"></div>
+      <div class="hide-when-collapsed">
+        <strong>Notario</strong>
+        <small>SaaS Notaires</small>
+      </div>
+    </div>
+    <nav class="menu" aria-label="Navigation principale">
+      <h4 class="hide-when-collapsed" data-i18n="nav.section.main">NAVIGATION</h4>
+      <a href="#" data-page="dashboard" class="active">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h8V3H3z"></path><path d="M13 21h8V11h-8z"></path><path d="M13 3h8"></path><path d="M3 21h8"></path></svg>
+        <span class="hide-when-collapsed" data-i18n="nav.dashboard">Tableau de bord</span>
+      </a>
+      <h4 class="hide-when-collapsed" data-i18n="nav.section.core">COEUR MÉTIER</h4>
+      <a href="#" data-page="utilisateurs">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span class="hide-when-collapsed" data-i18n="nav.users">Utilisateurs</span>
+      </a>
+      <a href="#" data-page="clients">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span class="hide-when-collapsed" data-i18n="nav.clients">Clients</span>
+      </a>
+      <a href="#" data-page="actions">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20l9-7-9-7-9 7 9 7z"/></svg>
+        <span class="hide-when-collapsed" data-i18n="nav.actionTypes">Types d’actions</span>
+      </a>
+      <a href="#" data-page="actes">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16l4-4h8a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/></svg>
+        <span class="hide-when-collapsed" data-i18n="nav.acts">Actes & Signatures</span>
+      </a>
+      <a href="#" data-page="dossiers">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h5l2 2h11v9a2 2 0 0 1-2 2H3z"/></svg>
+        <span class="hide-when-collapsed" data-i18n="nav.files">Dossiers</span>
+      </a>
+      <h4 class="hide-when-collapsed" data-i18n="nav.section.finance">FINANCE</h4>
+      <a href="#" data-page="factures">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10M7 12h6"/></svg>
+        <span class="hide-when-collapsed" data-i18n="nav.invoices">Factures</span>
+      </a>
+      <a href="#" data-page="paiements">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+        <span class="hide-when-collapsed" data-i18n="nav.payments">Paiements & Reçus</span>
+      </a>
+      <a href="#" data-page="caisse">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3h-8v4h8z"/></svg>
+        <span class="hide-when-collapsed" data-i18n="nav.cash">Caisse</span>
+      </a>
+      <a href="#" data-page="total">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span class="hide-when-collapsed" data-i18n="nav.summary">Total Compte</span>
+      </a>
+      <a href="#" data-page="comptes">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h18"/><path d="M5 6h14l1 4v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg>
+        <span class="hide-when-collapsed" data-i18n="nav.bank">Comptes bancaires</span>
+      </a>
+      <h4 class="hide-when-collapsed" data-i18n="nav.section.archives">ARCHIVES</h4>
+      <a href="#" data-page="archives-physiques">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="6" rx="2"/><path d="M4 10v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/></svg>
+        <span class="hide-when-collapsed" data-i18n="nav.phys">Archives physiques</span>
+      </a>
+      <a href="#" data-page="archives-numeriques">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span class="hide-when-collapsed" data-i18n="nav.num">Archives numériques (OCR)</span>
+      </a>
+      <h4 class="hide-when-collapsed" data-i18n="nav.section.prod">PRODUCTIVITÉ</h4>
+      <a href="#" data-page="modeles">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path d="M14 2v6h6"/></svg>
+        <span class="hide-when-collapsed" data-i18n="nav.templates">Modèles</span>
+      </a>
+      <a href="#" data-page="kanban">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="10" rx="1"/></svg>
+        <span class="hide-when-collapsed" data-i18n="nav.kanban">Kanban</span>
+      </a>
+      <a href="#" data-page="communication">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span class="hide-when-collapsed" data-i18n="nav.comm">Communication</span>
+      </a>
+      <a href="#" data-page="formation">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12l-10 5L2 12l10-5 10 5z"/><path d="M2 17l10 5 10-5"/></svg>
+        <span class="hide-when-collapsed" data-i18n="nav.training">Formation</span>
+      </a>
+      <a href="#" data-page="portail">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v12H3z"/><path d="M2 21h20"/><path d="M12 15v6"/></svg>
+        <span class="hide-when-collapsed" data-i18n="nav.portal">Portail Client</span>
+      </a>
+      <a href="#" data-page="automatisation">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09c.67 0 1.27-.39 1.51-1 .24-.61.09-1.34-.33-1.82l-.06-.06A2 2 0 1 1 7.04 3.3l.06.06c.48.48 1.17.63 1.82.33H9a1.65 1.65 0 0 0 1-1.51V2a2 2 0 1 1 4 0v.09c0 .67.39 1.27 1 1.51h.08c.65.3 1.34.15 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.48.48-.63 1.17-.33 1.82V8c.24.61.84 1 1.51 1H22a2 2 0 1 1 0 4h-.09c-.67 0-1.27.39-1.51 1z"/></svg>
+        <span class="hide-when-collapsed" data-i18n="nav.automation">Automatisation & Notifs</span>
+      </a>
+      <h4 class="hide-when-collapsed" data-i18n="nav.section.admin">ADMINISTRATION</h4>
+      <a href="#" data-page="cabinets">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18v10H3z"/><path d="M7 7V3h10v4"/></svg>
+        <span class="hide-when-collapsed" data-i18n="nav.cabinet">Cabinet (profil)</span>
+      </a>
+      <a href="#" data-page="administration">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v4"/><path d="M14 2v4"/><rect x="4" y="6" width="16" height="14" rx="2"/><path d="M2 10h20"/></svg>
+        <span class="hide-when-collapsed" data-i18n="nav.platform">Plateforme SaaS</span>
+      </a>
+      <a href="#" data-page="audit">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v14H3z"/><path d="M7 21h10"/><path d="M12 17v4"/></svg>
+        <span class="hide-when-collapsed" data-i18n="nav.audit">Journal d’audit</span>
+      </a>
+      <a href="#" data-page="securite">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span class="hide-when-collapsed" data-i18n="nav.security">Sécurité & Accès</span>
+      </a>
+      <a href="#" data-page="parametres">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09c.67 0 1.27-.39 1.51-1z"/></svg>
+        <span class="hide-when-collapsed" data-i18n="nav.settings">Paramètres</span>
+      </a>
+    </nav>
+  </aside>
+  <!-- Header -->
+  <header>
+    <div class="brand"><div class="flag-dot"></div> Notario <span class="chip">SaaS Notaires</span></div>
+    <div class="search">
+      <input id="searchInput" placeholder="Rechercher (dossiers, actes, clients…)" aria-label="Rechercher" />
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    </div>
+    <div class="lang" style="display:flex; gap:8px; align-items:center">
+      <label for="langSwitcher" class="chip">Langue</label>
+      <select id="langSwitcher" aria-label="Language"><option value="fr">FR</option><option value="en">EN</option></select>
+    </div>
+    <div class="header-actions">
+      <button class="iconbtn" id="collapseBtn" title="Réduire le menu" aria-label="Réduire le menu" aria-controls="sidebar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15V6a2 2 0 0 0-2-2h-5"/><path d="M3 9v9a2 2 0 0 0 2 2h5"/></svg>
+      </button>
+      <button class="iconbtn" id="themeBtn" title="Basculer clair/sombre" aria-label="Basculer clair/sombre">
+        <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c.132 0 .263.004.393.012A7 7 0 1 0 21 12c0-.13-.004-.26-.012-.39A9 9 0 0 1 12 3z"/></svg>
+      </button>
+      <button class="iconbtn" title="Notifications" aria-label="Notifications">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      </button>
+    </div>
+  </header>
+  <!-- Main -->
+  <main>
+    <!-- DASHBOARD -->
+    <section id="dashboard" class="page active">
+      <div class="page-header">
+        <div class="titlewrap">
+          <h1>Tableau de bord – Vue d’ensemble</h1>
+          <div class="subtitle">KPIs tenant-aware, signatures électroniques et flux de paiements.</div>
+        </div>
+        <div class="actions">
+          <button class="btn ghost" onclick="refreshKpis()">Actualiser</button>
+          <button class="btn primary" onclick="openModal('newDossierModal')">+ Nouveau dossier</button>
+        </div>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><div class="k">📁</div><div><div class="v" id="kpiDossiers">128</div><div class="l">Dossiers ouverts</div></div></div>
+        <div class="kpi"><div class="k">✍️</div><div><div class="v" id="kpiActes">34</div><div class="l">Actes en signature</div></div></div>
+        <div class="kpi"><div class="k">💳</div><div><div class="v" id="kpiPaiements">19</div><div class="l">Paiements en attente</div></div></div>
+        <div class="kpi"><div class="k">⏱️</div><div><div class="v" id="kpiSLA">98%</div><div class="l">SLA support 7j</div></div></div>
+      </div>
+      <div class="grid cols-2" style="margin-top:16px">
+        <div class="card"><div class="content"><h3>Répartition des actes</h3><canvas id="chartActes" height="140"></canvas></div></div>
+        <div class="card"><div class="content"><h3>Encaissements (30 jours)</h3><canvas id="chartCA" height="140"></canvas></div></div>
+      </div>
+      <div class="grid cols-2" style="margin-top:16px">
+        <div class="card"><div class="content">
+          <h3>Derniers dossiers</h3>
+          <table><thead><tr><th>#</th><th>Client</th><th>Objet</th><th>Statut</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>N-2025-104</td><td>Fam. Diallo</td><td>Vente immobilière</td><td><span class="tag">En cours</span></td><td><button class="btn" onclick="goto('dossiers')">Ouvrir</button></td></tr>
+              <tr><td>N-2025-105</td><td>Camara A.</td><td>Donation</td><td><span class="tag">En signature</span></td><td><button class="btn" onclick="goto('actes')">Signer</button></td></tr>
+              <tr><td>N-2025-106</td><td>Société KankanCorp</td><td>Statuts SARL</td><td><span class="tag">En attente pièces</span></td><td><button class="btn" onclick="goto('portail')">Portail</button></td></tr>
+            </tbody>
+          </table>
+        </div></div>
+        <div class="card"><div class="content">
+          <h3>Signatures en attente</h3>
+          <table><thead><tr><th>Acte</th><th>Partie</th><th>Échéance</th><th></th></tr></thead>
+            <tbody id="lastSigns"></tbody>
+          </table>
+        </div></div>
+      </div>
+    </section>
+    <!-- UTILISATEURS -->
+    <section id="utilisateurs" class="page">
+      <div class="page-header">
+        <div class="titlewrap"><h1>Utilisateurs</h1><div class="subtitle">Gestion des accès (RBAC) par cabinet.</div></div>
+        <div class="actions"><button class="btn" onclick="openModal('newUserModal')">+ Nouvel utilisateur</button><button class="btn ghost" onclick="exportCSV('tableUsers')">Exporter CSV</button></div>
+      </div>
+      <div class="card"><div class="content">
+        <table id="tableUsers"><thead><tr><th>Code</th><th>Nom</th><th>Prénom</th><th>Rôle</th><th>Téléphone</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>U-001</td><td>Notario</td><td>Maître</td><td><span class="tag">Notaire</span></td><td>+224 62 00 00 00</td><td class="row-actions"><button class="btn">Modifier</button><button class="btn ghost">Archiver</button></td></tr>
+            <tr><td>U-002</td><td>Conté</td><td>Aïssatou</td><td><span class="tag">Collaborateur</span></td><td>+224 62 11 22 33</td><td class="row-actions"><button class="btn">Modifier</button><button class="btn ghost">Archiver</button></td></tr>
+          </tbody>
+        </table>
+      </div></div>
+    </section>
+    <!-- CLIENTS -->
+    <section id="clients" class="page">
+      <div class="page-header">
+        <div class="titlewrap"><h1>Clients</h1><div class="subtitle">Base clients du cabinet.</div></div>
+        <div class="actions"><button class="btn" onclick="openModal('newClientModal')">+ Nouveau client</button><button class="btn ghost" onclick="exportCSV('tableClients')">Exporter CSV</button></div>
+      </div>
+      <div class="card"><div class="content">
+        <table id="tableClients"><thead><tr><th>Code</th><th>Nom</th><th>Qualité</th><th>Téléphone</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>C-1201</td><td>Bah Oumar</td><td>Physique</td><td>+224 62 44 55 66</td><td class="row-actions"><button class="btn">Modifier</button><button class="btn ghost">Supprimer</button></td></tr>
+            <tr><td>C-1202</td><td>SARL Nimba</td><td>Morale</td><td>+224 62 77 88 99</td><td class="row-actions"><button class="btn">Modifier</button><button class="btn ghost">Supprimer</button></td></tr>
+          </tbody>
+        </table>
+      </div></div>
+    </section>
+    <!-- TYPES D'ACTIONS -->
+    <section id="actions" class="page">
+      <div class="page-header"><div class="titlewrap"><h1>Types d’actions</h1><div class="subtitle">Catalogue des prestations.</div></div>
+        <div class="actions"><button class="btn" onclick="openModal('newActionModal')">+ Nouveau type</button></div>
+      </div>
+      <div class="card"><div class="content">
+        <table id="tableActions"><thead><tr><th>Libellé</th><th>État</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>Acte de vente</td><td><span class="tag">Actif</span></td><td class="row-actions"><button class="btn">Modifier</button><button class="btn ghost">Archiver</button></td></tr>
+            <tr><td>Donation</td><td><span class="tag">Actif</span></td><td class="row-actions"><button class="btn">Modifier</button><button class="btn ghost">Archiver</button></td></tr>
+          </tbody>
+        </table>
+      </div></div>
+    </section>
+    <!-- DOSSIERS -->
+    <section id="dossiers" class="page">
+      <div class="page-header">
+        <div class="titlewrap"><h1>Dossiers</h1><div class="subtitle">Gestion des dossiers, pièces et échanges avec les clients.</div></div>
+        <div class="actions"><button class="btn" onclick="openModal('newDossierModal')">+ Nouveau dossier</button><button class="btn ghost" onclick="exportCSV('tableDossiers')">Exporter CSV</button></div>
+      </div>
+      <div class="card"><div class="content">
+        <table id="tableDossiers"><thead><tr><th>#</th><th>Client</th><th>Objet</th><th>Avancement</th><th>Statut</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>N-2025-101</td><td>Bah Oumar</td><td>Vente – Villa</td><td><div class="progress"><span style="width:65%"></span></div></td><td><span class="tag">En cours</span></td><td class="row-actions"><button class="btn" onclick="openModal('newActeModal')">Créer acte</button><button class="btn" onclick="goto('portail')">Partager</button></td></tr>
+            <tr><td>N-2025-102</td><td>Sylla F.</td><td>Succession</td><td><div class="progress"><span style="width:35%"></span></div></td><td><span class="tag">En attente pièces</span></td><td class="row-actions"><button class="btn" onclick="goto('portail')">Demander pièces</button></td></tr>
+            <tr><td>N-2025-103</td><td>SARL Nimba</td><td>Constitution</td><td><div class="progress"><span style="width:90%"></span></div></td><td><span class="tag">En signature</span></td><td class="row-actions"><button class="btn" onclick="goto('actes')">Signer</button></td></tr>
+          </tbody>
+        </table>
+      </div></div>
+    </section>
+    <!-- ACTES & SIGNATURES -->
+    <section id="actes" class="page">
+      <div class="page-header"><div class="titlewrap"><h1>Actes & signatures</h1><div class="subtitle">Rédaction, génération et signature électronique.</div></div>
+        <div class="actions"><button class="btn" onclick="openModal('newActeModal')">+ Nouvel acte</button></div>
+      </div>
+      <div class="card"><div class="content">
+        <table id="tableActes"><thead><tr><th>Réf.</th><th>Dossier</th><th>Type</th><th>État</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>A-8842</td><td>N-2025-101</td><td>Vente</td><td><span class="tag">Brouillon</span></td><td class="row-actions"><button class="btn" onclick="openModal('sendSignModal')">Envoyer en signature</button></td></tr>
+            <tr><td>A-8843</td><td>N-2025-103</td><td>Statuts</td><td><span class="tag">En signature</span></td><td class="row-actions"><button class="btn" onclick="signNow(this)">Signer</button><button class="btn ghost" onclick="cancelSign(this)">Annuler</button></td></tr>
+            <tr><td>A-8844</td><td>N-2025-105</td><td>Donation</td><td><span class="tag">Signé</span></td><td class="row-actions"><button class="btn" onclick="printInvoice('A-8844')">Télécharger</button></td></tr>
+          </tbody>
+        </table>
+      </div></div>
+    </section>
+    <!-- PORTAIL CLIENT -->
+    <section id="portail" class="page">
+      <div class="page-header"><div class="titlewrap"><h1>Portail client</h1><div class="subtitle">Dépôt de pièces, suivi d’avancement et échanges sécurisés.</div></div></div>
+      <div class="grid cols-3">
+        <div class="card"><div class="content"><h3>Demandes de pièces</h3><div class="hint">3 demandes en attente</div><div class="sep"></div><button class="btn">Créer une demande</button></div></div>
+        <div class="card"><div class="content"><h3>Messages</h3><div class="hint">2 nouveaux messages</div><div class="sep"></div><button class="btn">Ouvrir la messagerie</button></div></div>
+        <div class="card"><div class="content"><h3>Accès portail</h3><div class="hint">Invitations envoyées ce mois : 12</div><div class="sep"></div><button class="btn">Inviter un client</button></div></div>
+      </div>
+    </section>
+    <!-- MODELES -->
+    <section id="modeles" class="page">
+      <div class="page-header"><div class="titlewrap"><h1>Modèles de documents</h1><div class="subtitle">Bibliothèque de clauses et d’actes.</div></div>
+        <div class="actions"><button class="btn" onclick="openModal('newModeleModal')">+ Nouveau modèle</button></div>
+      </div>
+      <div class="card"><div class="content">
+        <table id="tableModeles"><thead><tr><th>Nom</th><th>Catégorie</th><th>MàJ</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>Acte de vente – Immobilier</td><td>Vente</td><td>10/08/2025</td><td class="row-actions"><button class="btn" onclick="openModal('newActeModal')">Utiliser</button></td></tr>
+            <tr><td>Donation entre vifs</td><td>Donation</td><td>02/08/2025</td><td class="row-actions"><button class="btn" onclick="openModal('newActeModal')">Utiliser</button></td></tr>
+            <tr><td>Statuts SARL standard</td><td>Entreprise</td><td>28/07/2025</td><td class="row-actions"><button class="btn" onclick="openModal('newActeModal')">Utiliser</button></td></tr>
+          </tbody>
+        </table>
+      </div></div>
+    </section>
+    <!-- PAIEMENTS & RECUS -->
+    <section id="paiements" class="page">
+      <div class="page-header"><div class="titlewrap"><h1>Paiements & Reçus</h1><div class="subtitle">Encaissements, relances et génération de reçus PDF/QR (démo).</div></div>
+        <div class="actions"><button class="btn" onclick="openModal('newInvoiceModal')">+ Nouvelle facture</button></div>
+      </div>
+      <div class="grid cols-2">
+        <div class="card"><div class="content">
+          <h3>Encaissements</h3>
+          <table id="tablePaiements"><thead><tr><th>Facture</th><th>Client</th><th>Montant</th><th>Échéance</th><th>Statut</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>F-2025-220</td><td>Fam. Diallo</td><td>3 200 €</td><td>25/08/2025</td><td><span class="tag">En attente</span></td><td class="row-actions"><button class="btn" onclick="markPaid(this)">Marquer payé</button><button class="btn ghost" onclick="sendRemind(this)">Relancer</button><button class="btn" onclick="openModal('receiptModal')">Reçu (QR)</button></td></tr>
+              <tr><td>F-2025-221</td><td>SARL Nimba</td><td>1 450 €</td><td>15/08/2025</td><td><span class="tag">En retard</span></td><td class="row-actions"><button class="btn" onclick="sendRemind(this)">Relancer +1</button><button class="btn" onclick="openModal('receiptModal')">Reçu (QR)</button></td></tr>
+            </tbody>
+          </table>
+        </div></div>
+        <div class="card"><div class="content">
+          <h3>Récapitulatif</h3>
+          <div class="kpi"><div class="k">💰</div><div><div class="v" id="sumDue">4 650 €</div><div class="l">À encaisser</div></div></div>
+          <div class="kpi" style="margin-top:10px"><div class="k">✅</div><div><div class="v" id="sumPaid">12 300 €</div><div class="l">Payé ce mois</div></div></div>
+        </div></div>
+      </div>
+    </section>
+    <!-- FACTURES -->
+    <section id="factures" class="page">
+      <div class="page-header"><div class="titlewrap"><h1>Factures</h1><div class="subtitle">Création, suivi, export PDF.</div></div>
+        <div class="actions"><button class="btn" onclick="openModal('newInvoiceModal')">+ Nouvelle facture</button><button class="btn ghost" onclick="exportCSV('tableFactures')">Exporter CSV</button></div>
+      </div>
+      <div class="card"><div class="content">
+        <table id="tableFactures"><thead><tr><th>Code</th><th>Facture #</th><th>Client</th><th>Montant</th><th>Date</th><th>Statut</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>ACT-8843</td><td>F-2025-230</td><td>Camara A.</td><td>1 200 €</td><td>10/08/2025</td><td><span class="tag">Envoyée</span></td><td class="row-actions"><button class="btn" onclick="printInvoice('F-2025-230')">PDF</button></td></tr>
+            <tr><td>ACT-8844</td><td>F-2025-231</td><td>SARL Nimba</td><td>1 450 €</td><td>08/08/2025</td><td><span class="tag">Payée</span></td><td class="row-actions"><button class="btn" onclick="alert('Détails (démo)')">Détails</button></td></tr>
+          </tbody>
+        </table>
+      </div></div>
+    </section>
+    <!-- CAISSE -->
+    <section id="caisse" class="page">
+      <div class="page-header"><div class="titlewrap"><h1>Caisse</h1><div class="subtitle">Espèces & chèques – période sélectionnée</div></div>
+        <div class="actions"><button class="btn ghost" onclick="exportCSV('tableCaisse')">Exporter CSV</button></div>
+      </div>
+      <div class="card"><div class="content">
+        <table id="tableCaisse"><thead><tr><th>Type</th><th>Compte/Banque</th><th>Date</th><th>Nom</th><th>Montant</th></tr></thead>
+          <tbody>
+            <tr><td>Espèces</td><td>Caisse agence</td><td>11/08/2025</td><td>Bah O.</td><td>400 €</td></tr>
+            <tr><td>Chèque</td><td>BGFI 1234</td><td>10/08/2025</td><td>Nimba SARL</td><td>1 450 €</td></tr>
+          </tbody>
+        </table>
+      </div></div>
+    </section>
+    <!-- TOTAL COMPTE -->
+    <section id="total" class="page">
+      <div class="page-header"><div class="titlewrap"><h1>Total Compte</h1><div class="subtitle">Synthèse financière consolidée</div></div></div>
+      <div class="grid cols-3">
+        <div class="card"><div class="content"><h3>Banque</h3><div class="kpi"><div class="k">🏦</div><div><div class="v">24 500 €</div><div class="l">Solde cumulé</div></div></div></div></div>
+        <div class="card"><div class="content"><h3>Caisse</h3><div class="kpi"><div class="k">💵</div><div><div class="v">2 120 €</div><div class="l">Solde</div></div></div></div></div>
+        <div class="card"><div class="content"><h3>À recevoir</h3><div class="kpi"><div class="k">📩</div><div><div class="v">4 650 €</div><div class="l">Factures dues</div></div></div></div></div>
+      </div>
+      <div class="card" style="margin-top:16px"><div class="content"><h3>Courbe mensuelle</h3><canvas id="chartSynthese" height="140"></canvas></div></div>
+    </section>
+    <!-- COMPTES BANCAIRES -->
+    <section id="comptes" class="page">
+      <div class="page-header"><div class="titlewrap"><h1>Comptes bancaires</h1><div class="subtitle">IBAN, mouvements, soldes</div></div>
+        <div class="actions"><button class="btn" onclick="alert('Nouveau compte (démo)')">+ Nouveau compte</button></div>
+      </div>
+      <div class="card"><div class="content">
+        <table id="tableComptes"><thead><tr><th>Banque</th><th>N° Compte</th><th>Solde</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>BGFI</td><td>GN98 0000 1234 5678</td><td>12 000 €</td><td class="row-actions"><button class="btn" onclick="alert('Détails (démo)')">Détails</button></td></tr>
+            <tr><td>Ecobank</td><td>GN76 1111 2222 3333</td><td>12 500 €</td><td class="row-actions"><button class="btn" onclick="alert('Détails (démo)')">Détails</button></td></tr>
+          </tbody>
+        </table>
+      </div></div>
+    </section>
+    <!-- ARCHIVES PHYSIQUES -->
+    <section id="archives-physiques" class="page">
+      <div class="page-header"><div class="titlewrap"><h1>Archives physiques</h1><div class="subtitle">Boîtes et localisation</div></div>
+        <div class="actions"><button class="btn" onclick="alert('Nouvelle boîte (démo)')">+ Nouvelle boîte</button></div>
+      </div>
+      <div class="card"><div class="content">
+        <table id="tableArchPhys"><thead><tr><th>Boîte</th><th>Étagère</th><th>Contenu</th><th></th></tr></thead>
+          <tbody><tr><td>B-01</td><td>R2-E3</td><td>Dossiers 2024 T4</td><td class="row-actions"><button class="btn" onclick="alert('Associer (démo)')">Associer actes</button></td></tr></tbody>
+        </table>
+      </div></div>
+    </section>
+    <!-- ARCHIVES NUMERIQUES (OCR) -->
+    <section id="archives-numeriques" class="page">
+      <div class="page-header"><div class="titlewrap"><h1>Archives numériques (OCR)</h1><div class="subtitle">PDF, images, recherche plein texte</div></div></div>
+      <div class="card"><div class="content">
+        <div class="form" style="grid-template-columns:1fr auto">
+          <div><label>Recherche plein texte</label><input id="ocrSearch" placeholder='ex: "statuts SARL" ou numéro dossier' oninput="fakeOcrSearch()"/></div>
+          <div style="align-self:end"><button class="btn" onclick="alert('Importer (démo)')">Importer fichiers</button></div>
+        </div>
+        <div class="sep"></div>
+        <table id="tableOCR"><thead><tr><th>Fichier</th><th>Dossier</th><th>Mots-clés</th><th>Date</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>statuts_nimba.pdf</td><td>N-2025-103</td><td>Entreprise, Statuts</td><td>05/08/2025</td><td class="row-actions"><button class="btn" onclick="alert('Ouvrir (démo)')">Ouvrir</button></td></tr>
+            <tr><td>donation_camara.jpg</td><td>N-2025-105</td><td>Donation, Identité</td><td>01/08/2025</td><td class="row-actions"><button class="btn" onclick="alert('Ouvrir (démo)')">Ouvrir</button></td></tr>
+          </tbody>
+        </table>
+        <div id="ocrHint" class="hint" style="margin-top:8px">Tapez pour simuler un résultat OCR mis en évidence…</div>
+      </div></div>
+    </section>
+    <!-- KANBAN -->
+    <section id="kanban" class="page">
+      <div class="page-header"><div class="titlewrap"><h1>Tableau Kanban</h1><div class="subtitle">Tâches et échéances</div></div>
+        <div class="actions"><button class="btn" onclick="alert('Nouvelle tâche (démo)')">+ Nouvelle tâche</button></div>
+      </div>
+      <div class="kanban">
+        <div class="column"><h3>À faire</h3><div class="ticket">Préparer acte A-8842</div><div class="ticket">Demander pièce identité</div></div>
+        <div class="column"><h3>En cours</h3><div class="ticket">Signature A-8843</div></div>
+        <div class="column"><h3>Terminé</h3><div class="ticket">Facture F-2025-231</div></div>
+      </div>
+    </section>
+    <!-- COMMUNICATION -->
+    <section id="communication" class="page">
+      <div class="page-header"><div class="titlewrap"><h1>Communication interne</h1><div class="subtitle">Messages instantanés par cabinet</div></div></div>
+      <div class="card"><div class="content">
+        <div id="chat" style="height:180px; overflow:auto; border:1px dashed var(--border); border-radius:12px; padding:8px; background:var(--elev)"></div>
+        <div class="form" style="grid-template-columns:1fr auto; margin-top:8px">
+          <input id="chatInput" placeholder="Écrire un message" onkeydown="if(event.key==='Enter'){postMsg()}"/>
+          <button class="btn" onclick="postMsg()">Envoyer</button>
+        </div>
+      </div></div>
+    </section>
+    <!-- FORMATION -->
+    <section id="formation" class="page">
+      <div class="page-header"><div class="titlewrap"><h1>Formation</h1><div class="subtitle">Ressources internes par cabinet</div></div></div>
+      <div class="card"><div class="content">
+        <table id="tableFormation"><thead><tr><th>Module</th><th>Type</th><th>Statut</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>Procédure ouverture dossier</td><td>PDF</td><td><span class="tag">Non lu</span></td><td class="row-actions"><button class="btn" onclick="markRead(this)">Marquer lu</button></td></tr>
+            <tr><td>Signature électronique</td><td>Vidéo</td><td><span class="tag">Non lu</span></td><td class="row-actions"><button class="btn" onclick="markRead(this)">Marquer lu</button></td></tr>
+          </tbody>
+        </table>
+      </div></div>
+    </section>
+    <!-- AUTOMATISATION & NOTIFS -->
+    <section id="automatisation" class="page">
+      <div class="page-header"><div class="titlewrap"><h1>Automatisation & Notifications</h1><div class="subtitle">SMS / Email, déclencheurs et canaux</div></div></div>
+      <div class="card"><div class="content">
+        <table id="tableNotifs"><thead><tr><th>Événement</th><th>Canal</th><th>Actif</th></tr></thead>
+          <tbody>
+            <tr><td>Réception de paiement</td><td><span class="pill">Email</span> <span class="pill">SMS</span></td><td><input type="checkbox" checked></td></tr>
+            <tr><td>Validation notaire</td><td><span class="pill">Email</span></td><td><input type="checkbox" checked></td></tr>
+            <tr><td>Action requise (client)</td><td><span class="pill">SMS</span></td><td><input type="checkbox"></td></tr>
+          </tbody>
+        </table>
+      </div></div>
+    </section>
+    <!-- AUDIT -->
+    <section id="audit" class="page">
+      <div class="page-header"><div class="titlewrap"><h1>Journal d’audit</h1><div class="subtitle">Actions des utilisateurs et événements clés.</div></div></div>
+      <div class="card"><div class="content">
+        <table><thead><tr><th>Date</th><th>Utilisateur</th><th>Action</th></tr></thead>
+          <tbody>
+            <tr><td>12/08/2025 11:10</td><td>maitre.notario</td><td>Envoi acte A-8843 en signature</td></tr>
+            <tr><td>12/08/2025 10:40</td><td>assist01</td><td>Création dossier N-2025-106</td></tr>
+            <tr><td>12/08/2025 09:55</td><td>compta</td><td>Relance facture F-2025-221</td></tr>
+          </tbody>
+        </table>
+      </div></div>
+    </section>
+    <!-- SECURITE -->
+    <section id="securite" class="page">
+      <div class="page-header"><div class="titlewrap"><h1>Sécurité & Accès</h1><div class="subtitle">Rôles, MFA et politiques d’accès.</div></div></div>
+      <div class="grid cols-2">
+        <div class="card"><div class="content"><h3>Rôles</h3>
+          <table><thead><tr><th>Rôle</th><th>Droits</th></tr></thead><tbody>
+            <tr><td>Admin Global</td><td>Plateforme & tenants</td></tr>
+            <tr><td>Gérant</td><td>Administration cabinet</td></tr>
+            <tr><td>Utilisateur</td><td>Dossiers, actes, portail</td></tr>
+          </tbody></table>
+        </div></div>
+        <div class="card"><div class="content"><h3>MFA & Politique</h3>
+          <div class="hint">Exiger MFA pour Notaire & Comptabilité</div>
+          <div class="sep"></div>
+          <button class="btn" onclick="toggleMfa(this)">Activer MFA</button>
+        </div></div>
+      </div>
+    </section>
+    <!-- PARAMETRES -->
+    <section id="parametres" class="page">
+      <div class="page-header"><div class="titlewrap"><h1>Paramètres</h1><div class="subtitle">Préférences de l’application.</div></div></div>
+      <div class="card"><div class="content">
+        <div class="form">
+          <div><label>Langue</label><select id="langSelect"><option value="fr">Français</option><option value="en">English</option></select></div>
+          <div><label>Thème</label><select id="themeSelect"><option value="dark">Sombre (recommandé)</option><option value="light">Clair</option></select></div>
+          <div style="grid-column:1/-1"><label>Charte tricolore</label>
+            <div class="hint">Accent basée sur le drapeau de la Guinée (rouge, jaune, vert).</div>
+          </div>
+        </div>
+      </div></div>
+    </section>
+    <!-- ADMINISTRATION (Plateforme SaaS) -->
+    <section id="administration" class="page">
+      <div class="page-header"><div class="titlewrap"><h1>Plateforme SaaS – Tenants & Modules</h1><div class="subtitle">Gestion des cabinets, activation de modules, facturation</div></div></div>
+      <div class="grid cols-2">
+        <div class="card"><div class="content">
+          <h3>Cabinets (tenants)</h3>
+          <table id="tableTenants"><thead><tr><th>Nom</th><th>Sous-domaine</th><th>Statut</th><th>Utilisateurs</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>Étude Maître Notario</td><td>notario</td><td><span class="tag">Production</span></td><td>14</td><td class="row-actions"><button class="btn" onclick="alert('Configurer (démo)')">Configurer</button></td></tr>
+              <tr><td>Étude Kankan</td><td>kankan</td><td><span class="tag">Test</span></td><td>6</td><td class="row-actions"><button class="btn" onclick="alert('Configurer (démo)')">Configurer</button></td></tr>
+            </tbody>
+          </table>
+        </div></div>
+        <div class="card"><div class="content">
+          <h3>Modules & Prix</h3>
+          <table id="tableModules"><thead><tr><th>Module</th><th>Prix/mois</th><th>Actif (tenant sélectionné)</th></tr></thead>
+            <tbody>
+              <tr><td>Archives numériques (OCR)</td><td>25 €</td><td><input type="checkbox" checked></td></tr>
+              <tr><td>Portail client</td><td>15 €</td><td><input type="checkbox" checked></td></tr>
+              <tr><td>Kanban</td><td>5 €</td><td><input type="checkbox"></td></tr>
+            </tbody>
+          </table>
+          <div class="sep"></div>
+          <button class="btn primary" onclick="alert('Facture générée (démo)')">Générer facture mensuelle</button>
+        </div></div>
+      </div>
+    </section>
+    <!-- CABINET (profil) -->
+    <section id="cabinets" class="page">
+      <div class="page-header"><div class="titlewrap"><h1>Cabinet – Profil & Branding</h1><div class="subtitle">Logo, devise (GNF), numérotation de factures</div></div></div>
+      <div class="card"><div class="content">
+        <div class="form">
+          <div><label>Nom du cabinet</label><input value="Étude Maître Notario"/></div>
+          <div><label>Devise</label><select><option>GNF</option><option>EUR</option></select></div>
+          <div><label>Numérotation factures</label><input value="F-{{ANNEE}}-{{SEQ}}"/></div>
+          <div style="grid-column:1/-1"><label>Logo</label><input type="file"/></div>
+        </div>
+      </div></div>
+    </section>
+  </main>
+  <!-- Modals -->
+  <div id="newDossierModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titleNewDossier">
+    <div class="box">
+      <header class="page-header"><h2 id="titleNewDossier">Nouveau dossier</h2><button class="btn ghost" onclick="closeModal('newDossierModal')">Fermer</button></header>
+      <div class="content"><div class="form">
+        <div><label>Client</label><input placeholder="Nom du client"/></div>
+        <div><label>Objet</label><input placeholder="Objet du dossier"/></div>
+        <div style="grid-column:1/-1"><label>Notes</label><textarea placeholder="…"></textarea></div>
+      </div></div>
+      <div class="footer-actions"><button class="btn primary" onclick="closeModal('newDossierModal')">Créer</button></div>
+    </div>
+  </div>
+  <div id="newActeModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titleNewActe">
+    <div class="box">
+      <header class="page-header"><h2 id="titleNewActe">Nouvel acte</h2><button class="btn ghost" onclick="closeModal('newActeModal')">Fermer</button></header>
+      <div class="content"><div class="form">
+        <div><label>Type</label><select><option>Vente</option><option>Donation</option><option>Statuts</option></select></div>
+        <div><label>Dossier</label><input placeholder="# dossier"/></div>
+        <div style="grid-column:1/-1"><label>Contenu</label><textarea placeholder="Brouillon…"></textarea></div>
+      </div></div>
+      <div class="footer-actions"><button class="btn primary" onclick="closeModal('newActeModal')">Enregistrer</button></div>
+    </div>
+  </div>
+  <div id="sendSignModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titleSendSign">
+    <div class="box">
+      <header class="page-header"><h2 id="titleSendSign">Envoyer en signature</h2><button class="btn ghost" onclick="closeModal('sendSignModal')">Fermer</button></header>
+      <div class="content"><div class="form">
+        <div><label>Destinataire</label><input placeholder="email@client"/></div>
+        <div><label>Échéance</label><input type="date"/></div>
+        <div style="grid-column:1/-1"><label>Message</label><textarea>Veuillez signer l’acte…</textarea></div>
+      </div></div>
+      <div class="footer-actions"><button class="btn primary" onclick="closeModal('sendSignModal')">Envoyer</button></div>
+    </div>
+  </div>
+  <div id="newModeleModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titleNewModel">
+    <div class="box">
+      <header class="page-header"><h2 id="titleNewModel">Nouveau modèle</h2><button class="btn ghost" onclick="closeModal('newModeleModal')">Fermer</button></header>
+      <div class="content"><div class="form">
+        <div><label>Nom</label><input placeholder="Acte de …"/></div>
+        <div><label>Catégorie</label><select><option>Vente</option><option>Donation</option><option>Entreprise</option></select></div>
+        <div style="grid-column:1/-1"><label>Contenu</label><textarea placeholder="Variables: {{client}}, {{date}}, …"></textarea></div>
+      </div></div>
+      <div class="footer-actions"><button class="btn primary" onclick="closeModal('newModeleModal')">Créer</button></div>
+    </div>
+  </div>
+  <div id="newInvoiceModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titleNewInvoice">
+    <div class="box">
+      <header class="page-header"><h2 id="titleNewInvoice">Nouvelle facture</h2><button class="btn ghost" onclick="closeModal('newInvoiceModal')">Fermer</button></header>
+      <div class="content"><div class="form">
+        <div><label>Client</label><input placeholder="Client"/></div>
+        <div><label>Montant</label><input placeholder="0,00"/></div>
+        <div><label>Échéance</label><input type="date"/></div>
+        <div style="grid-column:1/-1"><label>Détails</label><textarea></textarea></div>
+      </div></div>
+      <div class="footer-actions"><button class="btn primary" onclick="closeModal('newInvoiceModal')">Créer</button></div>
+    </div>
+  </div>
+  <div id="receiptModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titleReceipt">
+    <div class="box">
+      <header class="page-header"><h2 id="titleReceipt">Reçu – QR de vérification</h2><button class="btn ghost" onclick="closeModal('receiptModal')">Fermer</button></header>
+      <div class="content">
+        <div class="grid cols-2">
+          <div>
+            <div class="hint">Ce QR simule un contrôle hors-ligne</div>
+            <svg id="qr" width="180" height="180" viewBox="0 0 100 100" style="background:#fff; border-radius:12px"></svg>
+          </div>
+          <div>
+            <p class="hint">Reçu #R-2025-001<br/>Facture F-2025-220<br/>Montant: 3 200 €</p>
+            <button class="btn" onclick="printInvoice('R-2025-001')">Télécharger PDF</button>
+          </div>
+        </div>
+      </div>
+      <div class="footer-actions"><button class="btn primary" onclick="closeModal('receiptModal')">OK</button></div>
+    </div>
+  </div>
+  <div id="newUserModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titleUser">
+    <div class="box">
+      <header class="page-header"><h2 id="titleUser">Nouvel utilisateur</h2><button class="btn ghost" onclick="closeModal('newUserModal')">Fermer</button></header>
+      <div class="content"><div class="form">
+        <div><label>Nom</label><input/></div>
+        <div><label>Prénom</label><input/></div>
+        <div><label>Rôle</label><select><option>Utilisateur</option><option>Gérant</option><option>Comptabilité</option><option>Notaire</option></select></div>
+        <div><label>Téléphone</label><input/></div>
+      </div></div>
+      <div class="footer-actions"><button class="btn primary" onclick="closeModal('newUserModal')">Créer</button></div>
+    </div>
+  </div>
+  <div id="newClientModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="titleClient">
+    <div class="box">
+      <header class="page-header"><h2 id="titleClient">Nouveau client</h2><button class="btn ghost" onclick="closeModal('newClientModal')">Fermer</button></header>
+      <div class="content"><div class="form">
+        <div><label>Nom</label><input/></div>
+        <div><label>Type</label><select><option>Personne physique</option><option>Personne morale</option></select></div>
+        <div style="grid-column:1/-1"><label>Coordonnées</label><textarea></textarea></div>
+      </div></div>
+      <div class="footer-actions"><button class="btn primary" onclick="closeModal('newClientModal')">Créer</button></div>
+    </div>
+  </div>
+  <script>
+    /* === i18n (FR/EN) minimal: menus + sections === */
+    const dict={
+      fr:{
+        'nav.section.main':'NAVIGATION','nav.section.core':'COEUR MÉTIER','nav.section.finance':'FINANCE','nav.section.archives':'ARCHIVES','nav.section.prod':'PRODUCTIVITÉ','nav.section.admin':'ADMINISTRATION',
+        'nav.dashboard':'Tableau de bord','nav.users':'Utilisateurs','nav.clients':'Clients','nav.actionTypes':'Types d’actions','nav.acts':'Actes & Signatures','nav.files':'Dossiers','nav.invoices':'Factures','nav.payments':'Paiements & Reçus','nav.cash':'Caisse','nav.summary':'Total Compte','nav.bank':'Comptes bancaires','nav.phys':'Archives physiques','nav.num':'Archives numériques (OCR)','nav.templates':'Modèles','nav.kanban':'Kanban','nav.comm':'Communication','nav.training':'Formation','nav.portal':'Portail Client','nav.automation':'Automatisation & Notifs','nav.cabinet':'Cabinet (profil)','nav.platform':'Plateforme SaaS','nav.audit':'Journal d’audit','nav.security':'Sécurité & Accès','nav.settings':'Paramètres'
+      },
+      en:{
+        'nav.section.main':'NAVIGATION','nav.section.core':'CORE BUSINESS','nav.section.finance':'FINANCE','nav.section.archives':'ARCHIVES','nav.section.prod':'PRODUCTIVITY','nav.section.admin':'ADMINISTRATION',
+        'nav.dashboard':'Dashboard','nav.users':'Users','nav.clients':'Clients','nav.actionTypes':'Action types','nav.acts':'Acts & eSign','nav.files':'Files','nav.invoices':'Invoices','nav.payments':'Payments & Receipts','nav.cash':'Cash desk','nav.summary':'Account Total','nav.bank':'Bank accounts','nav.phys':'Physical archives','nav.num':'Digital archives (OCR)','nav.templates':'Templates','nav.kanban':'Kanban','nav.comm':'Communication','nav.training':'Training','nav.portal':'Client Portal','nav.automation':'Automation & Alerts','nav.cabinet':'Firm (profile)','nav.platform':'SaaS Platform','nav.audit':'Audit log','nav.security':'Security & Access','nav.settings':'Settings'
+      }
+    };
+    let lang=localStorage.getItem('lang')||'fr';
+    function t(k){return (dict[lang]&&dict[lang][k])||k}
+    function applyI18n(){document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t(el.getAttribute('data-i18n'))); document.title=(lang==='fr')?'Notario – Maquette interactive (Cahier de charges)':'Notario – Interactive mockup (Spec)';}
+    document.addEventListener('DOMContentLoaded',()=>{
+      const sel=document.getElementById('langSwitcher'); if(sel){sel.value=lang; sel.addEventListener('change',e=>{lang=e.target.value; localStorage.setItem('lang',lang); applyI18n();});}
+      applyI18n();
+    });
+    // Routing
+    const links=[...document.querySelectorAll('nav a[data-page]')];
+    const pages=[...document.querySelectorAll('.page')];
+    links.forEach(a=>a.addEventListener('click',e=>{e.preventDefault();goto(a.dataset.page);}));
+    function goto(id){pages.forEach(p=>p.classList.toggle('active',p.id===id));links.forEach(l=>l.classList.toggle('active',l.dataset.page===id));window.scrollTo({top:0,behavior:'smooth'});}
+    // Collapse sidebar
+    document.getElementById('collapseBtn').onclick=()=>{document.body.classList.toggle('collapse')}
+    // Theme toggle
+    const themeBtn=document.getElementById('themeBtn'); themeBtn.onclick=()=>{document.body.classList.toggle('light');}
+    // Search filter (contextual to the active page)
+    const searchInput=document.getElementById('searchInput');
+    searchInput.addEventListener('input',()=>{
+      const q=searchInput.value.toLowerCase().trim();
+      const active=document.querySelector('.page.active');
+      const rows=active?.querySelectorAll('tbody tr')||[];
+      rows.forEach(tr=>{tr.style.display=[...tr.children].some(td=>td.innerText.toLowerCase().includes(q))?'':'none'});
+    });
+    // Charts
+    function makeChart(id,type,data,options){const ctx=document.getElementById(id); if(!ctx) return; return new Chart(ctx,{type,data,options});}
+    let chartActes = makeChart('chartActes','doughnut',{labels:['Vente','Donation','Statuts','Autres'],datasets:[{data:[16,8,6,4]}]},{plugins:{legend:{display:true}}});
+    let chartCA = makeChart('chartCA','line',{labels:['J-6','J-5','J-4','J-3','J-2','J-1','J'],datasets:[{data:[800,1200,600,1400,900,1300,1600]}]},{plugins:{legend:{display:false}}});
+    let chartSynthese = makeChart('chartSynthese','bar',{labels:['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août'],datasets:[{data:[9,11,10,12,14,13,15,16]}]},{plugins:{legend:{display:false}}});
+    // Dashboard signs demo
+    const pending=[['A-8843','Camara A.','15/08/2025'],['A-8850','Bah O.','22/08/2025']];
+    document.getElementById('lastSigns').innerHTML=pending.map(p=>`<tr><td>${p[0]}</td><td>${p[1]}</td><td>${p[2]}</td><td><button class="btn" onclick="goto('actes')">Voir</button></td></tr>`).join('');
+    // Helpers
+    function refreshKpis(){['kpiDossiers','kpiActes','kpiPaiements'].forEach(id=>{const el=document.getElementById(id); el.textContent=parseInt(el.textContent,10)+1;});}
+    function exportCSV(tableId){const table=document.getElementById(tableId); if(!table) return; let csv='';
+      table.querySelectorAll('tr').forEach(tr=>{csv+=[...tr.children].map(td=>`"${td.innerText.replaceAll('"','""')}"`).join(',')+'\\n';});
+      const blob=new Blob([csv],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=tableId+'.csv'; a.click();}
+    function openModal(id){document.getElementById(id).style.display='flex'; if(id==='receiptModal') drawQR('qr','R-2025-001');}
+    function closeModal(id){document.getElementById(id).style.display='none'}
+    function signNow(btn){btn.closest('tr').querySelector('.tag').textContent='Signé'}
+    function cancelSign(btn){btn.closest('tr').querySelector('.tag').textContent='Brouillon'}
+    function sendRemind(btn){btn.textContent='Relancé ✔';}
+    function euroToNumber(s){if(!s) return 0; return parseFloat(String(s).replace(/[^0-9,\\.]/g,'').replace(',','.'))||0}
+    function recalcPayments(){const rows=document.querySelectorAll('#tablePaiements tbody tr'); let due=0, paid=12300; // base demo for paid this month
+      rows.forEach(r=>{const amount=euroToNumber(r.children[2]?.innerText); const status=r.children[4]?.innerText||''; if(status.includes('En')||status.includes('retard')) due+=amount;});
+      document.getElementById('sumDue').textContent = new Intl.NumberFormat('fr-FR').format(due)+' €';
+      document.getElementById('sumPaid').textContent = new Intl.NumberFormat('fr-FR').format(paid)+' €';
+    }
+    function markPaid(btn){const row=btn.closest('tr'); row.querySelector('.tag').textContent='Payé'; recalcPayments();}
+    function toggleMfa(el){el.textContent=el.textContent.includes('Activer')?'Désactiver MFA':'Activer MFA'}
+    function markRead(btn){btn.closest('tr').querySelector('.tag').textContent='Lu'}
+    // Fake OCR highlight
+    function fakeOcrSearch(){const q=document.getElementById('ocrSearch').value.trim(); const hint=document.getElementById('ocrHint'); hint.innerHTML=q?`Résultats contenant <span class="pill">${q}</span> surlignés dans les aperçus…`:'Tapez pour simuler un résultat OCR mis en évidence…'}
+    // Chat
+    function postMsg(){const input=document.getElementById('chatInput'); const v=input.value.trim(); if(!v) return; const box=document.getElementById('chat'); const line=document.createElement('div'); line.textContent=v; box.appendChild(line); box.scrollTop=box.scrollHeight; input.value=''}
+    // Tiny QR (placeholder squares)
+    function drawQR(svgId,text){const svg=document.getElementById(svgId); svg.innerHTML=''; const r=()=>Math.random()>0.5; let y=5; for(let i=0;i<12;i++){let x=5; for(let j=0;j<12;j++){if(r()) svg.innerHTML+=`<rect x="${x}" y="${y}" width="5" height="5" fill="#111"/>`; x+=6;} y+=6;} }
+    // Default actions for generic buttons (no double binding)
+    document.addEventListener('click',(e)=>{
+      const b=e.target.closest('button.btn'); if(!b) return; if(b.hasAttribute('onclick')) return;
+      const label=(b.textContent||'').trim(); const row=b.closest('tr');
+      if(label.includes('PDF')){ const code=row?.children?.[1]?.textContent?.trim()||'F-AUTO'; printInvoice(code); }
+      else if(label.includes('Détails')){ alert('Détails (démo)'); }
+      else if(label){ alert(label+' (démo)'); }
+    });
+    function printInvoice(code){
+      const w=window.open('','printwin'); if(!w) return;
+      w.document.write(`<html><head><title>${code}</title><style>body{font-family:Inter,Arial;padding:24px} h1{margin:0 0 8px} .muted{color:#666}</style></head><body>
+        <h1>Invoice ${code}</h1><div class="muted">Notario • ${new Date().toLocaleDateString()}</div><hr/>
+        <p>Client: Demo Client</p><p>Amount: 1 200 €</p><p>Status: Sent</p></body></html>`);
+      w.document.close(); w.focus(); w.print();
+    }
+    // Initial computations
+    document.addEventListener('DOMContentLoaded', recalcPayments);
+  </script>
+</body>
+</html>
