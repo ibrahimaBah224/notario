@@ -1,54 +1,111 @@
-# React + TypeScript + Vite
+# Notario - Application de Gestion Notariale
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Application React moderne pour la gestion complète d'un cabinet notarial, incluant la gestion des dossiers, actes, facturation, archives et communication.
 
-Currently, two official plugins are available:
+## 🚀 Fonctionnalités
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### 📊 Tableau de bord
+- KPIs en temps réel
+- Graphiques de synthèse
+- Derniers dossiers et signatures en attente
 
-## Expanding the ESLint configuration
+### 👥 Gestion des utilisateurs
+- Utilisateurs et rôles
+- Clients et contacts
+- Types d'actions
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 📁 Gestion des dossiers
+- Création et suivi des dossiers
+- Actes et signatures électroniques
+- Portail client sécurisé
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+### 💰 Finance
+- Facturation et paiements
+- Caisse et comptes bancaires
+- Synthèse financière avec graphiques
+
+### 📦 Archives
+- Archives physiques avec localisation
+- Archives numériques avec OCR
+- Recherche plein texte
+
+### ⚡ Productivité
+- Modèles de documents
+- Tableau Kanban
+- Communication interne
+- Formation et ressources
+
+### 🔧 Administration
+- Profil du cabinet
+- Plateforme SaaS multi-tenants
+- Sécurité et audit
+- Paramètres avancés
+
+## 🛠️ Technologies
+
+- **React 18** avec TypeScript
+- **Vite** pour le build
+- **React Router** pour la navigation
+- **Chart.js** pour les graphiques
+- **CSS Variables** pour le thème
+
+## 📦 Installation
+
+```bash
+# Installer les dépendances
+npm install
+
+# Lancer en développement
+npm run dev
+
+# Build pour production
+npm run build
+
+# Prévisualiser le build
+npm run preview
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 🌐 Déploiement
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Vercel (Recommandé)
+1. Connectez votre repo GitHub à Vercel
+2. Vercel détectera automatiquement la configuration
+3. Déploiement automatique à chaque push
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+### Configuration
+Le fichier `vercel.json` est configuré pour :
+- Framework: Vite
+- Build command: `npm run build`
+- Output directory: `dist`
+- SPA routing avec fallback vers `index.html`
+
+## 🎨 Thème
+
+L'application utilise un thème sombre avec les couleurs du drapeau guinéen :
+- Rouge: #CE1126
+- Jaune: #FCD116  
+- Vert: #009460
+
+## 📱 Responsive
+
+L'interface s'adapte automatiquement aux écrans :
+- Desktop: Navigation complète
+- Tablette: Menu réduit
+- Mobile: Interface optimisée
+
+## 🔐 Sécurité
+
+- Authentification à deux facteurs
+- Gestion des rôles et permissions
+- Journal d'audit complet
+- Chiffrement des données sensibles
+
+## 📞 Support
+
+Pour toute question ou problème :
+- Créez une issue sur GitHub
+- Contactez l'équipe de développement
+
+---
+
+**Notario** - Simplifiez la gestion de votre cabinet notarial 🏛️
